@@ -31,6 +31,7 @@ import org.terasology.entitySystem.systems.RegisterSystem;
 import org.terasology.entitySystem.systems.UpdateSubscriberSystem;
 import org.terasology.logic.location.LocationComponent;
 import org.terasology.logic.location.LocationResynchEvent;
+import org.terasology.logic.players.LocalPlayer;
 import org.terasology.math.geom.Quat4f;
 import org.terasology.math.geom.Vector3f;
 import org.terasology.monitoring.PerformanceMonitor;
@@ -47,6 +48,7 @@ import org.terasology.physics.events.ForceEvent;
 import org.terasology.physics.events.ImpulseEvent;
 import org.terasology.physics.events.PhysicsResynchEvent;
 import org.terasology.physics.events.ImpactEvent;
+import org.terasology.registry.CoreRegistry;
 import org.terasology.registry.In;
 import org.terasology.world.OnChangedBlock;
 import org.terasology.world.WorldProvider;
@@ -192,6 +194,24 @@ public class PhysicsSystem extends BaseComponentSystem implements UpdateSubscrib
             RigidBody body = physics.getRigidBody(entity);
 
             if (body.isActive()) {
+                //--- THIS IS ADDED FOR MAGNETISM
+                EntityRef localPlayer = CoreRegistry.get(LocalPlayer.class).getClientEntity();
+                if (localPlayer!=null)
+                {
+                    Vector3f playerPosition = localPlayer.getComponent(LocationComponent.class).getWorldPosition();
+                    Vector3f itemPosition = Vector3f.zero();
+                    body.getLocation(itemPosition);
+                    Vector3f directionToPlayer = new Vector3f(itemPosition);
+                    directionToPlayer.sub(playerPosition);
+                    float distanceToPlayer = directionToPlayer.length();
+                    if (distanceToPlayer < 3.f)
+                    {
+                        directionToPlayer.normalize();
+                        body.applyImpulse(directionToPlayer.mul(comp.mass));
+                    }
+                }
+                //-------------------------------
+
                 body.getLinearVelocity(comp.velocity);
                 body.getAngularVelocity(comp.angularVelocity);
 
